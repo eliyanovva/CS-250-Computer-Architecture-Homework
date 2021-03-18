@@ -133,6 +133,14 @@ end TCL_Generic;
     <a name="clabelfont" val="SansSerif plain 12"/>
     <a name="circuitvhdl" val="false"/>
     <a name="circuitvhdlpath" val=""/>
+    <comp lib="4" loc="(170,490)" name="RAM"/>
+    <comp lib="4" loc="(590,500)" name="ROM">
+      <a name="contents">addr/data: 8 8
+0
+</a>
+    </comp>
+    <comp loc="(540,160)" name="tedi_regfile"/>
+    <comp loc="(650,320)" name="tedi_ALU"/>
   </circuit>
   <circuit name="tedi_adder">
     <a name="circuit" val="tedi_adder"/>
