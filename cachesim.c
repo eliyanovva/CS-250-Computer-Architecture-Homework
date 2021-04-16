@@ -56,7 +56,7 @@ void load(int address, int access, int ways, int sets, struct block** cache, cha
 
     for (int i=0; i<ways; i++){
         for(int j=0; j<sets; j++){
-            if(cache[i][j].tag_index<= address_block && cache[i][j].tag_index>=address_block && cache[i][j].valid==1){
+            if(cache[i][j].tag_index== address_block && cache[i][j].valid==1){
                 // obtain the correct block that needs to be ouputted
                 for(int k = check; k<check+access; k++)
                     print_val[k-check] = cache[i][j].c_bytes[k];
@@ -87,8 +87,9 @@ void load(int address, int access, int ways, int sets, struct block** cache, cha
         //print part
         int page = address_block *block_size;
 
-        for(int k = check; k<check+access; k++)
+        for(int k = check; k<check+access; k++){
             print_val[k-check] = mem[page + k];
+            }
 //        printf(cache[i][j].c_bytes);
 //        printf("\n %s\n", print_val);
         printf("load %.4x miss ", address);
@@ -96,12 +97,12 @@ void load(int address, int access, int ways, int sets, struct block** cache, cha
 
         // push to the cache from memory part
 
-        int cur_set = page % sets;
+        int cur_set = address_block % sets;
+       // printf("current set is %d when address page is %d and number of sets is %d \n",cur_set, page, sets );
         for(int i=0; i<ways; i++){
             //update LRE, set valid bit to 1, set
             if(cache[i][cur_set].LRE == ways-1){
                 cache[i][cur_set].valid = 1;
-                cache[i][cur_set].tag_index = address_block;
                 cache[i][cur_set].LRE = 0;
 
                 // check for dirty bit and push to memory current contents
@@ -110,9 +111,15 @@ void load(int address, int access, int ways, int sets, struct block** cache, cha
                         mem[j] = cache[i][cur_set].c_bytes[j-cache[i][cur_set].tag_index*block_size];
                     cache[i][cur_set].dirty = 0;
                 }
-                for(int j=address; j<address +access; j++ ){
-                    cache[i][cur_set].c_bytes[check + j - address] = mem[j];
+
+                cache[i][cur_set].tag_index = address_block;
+
+                for(int j=page; j<page + block_size; j++ ){
+                    cache[i][cur_set].c_bytes[j - page] = mem[j];
                 }
+                //printf("new page vals is ");
+                //print_hexadecimal(cache[i][cur_set].c_bytes, block_size);
+                //printf("\n");
 
             // update the LRE values of the rest of the numebrs in the set
                 for (int k = 0; k<ways; k++){
@@ -135,6 +142,7 @@ void store(int address, int access, int ways, int sets, struct block** cache, ch
 
     if(write_back == 0){
         //hit
+       // printf("ne wlize :(\n");
         for (int i=0; i<ways; i++){
             for(int j=0; j<sets; j++){
                 if(cache[i][j].tag_index == address_block && cache[i][j].valid==1){
@@ -166,12 +174,19 @@ void store(int address, int access, int ways, int sets, struct block** cache, ch
         if(hit==0){
             printf("store %.4x miss\n", address);
 
-            for(int i = address; i<address + access; i++)
+            for(int i = address; i<address + access; i++){
                 mem[i] = info[i-address];
+                //printf("char in memory is %c, char in info is %c\n", mem[i], info[i-address]);
+                }
+            //printf("store miss new page val is ");
+            //    print_hexadecimal(mem+page, block_size);
+            //    printf("\n");
+
         }
     }
 
     if(write_back==1){
+        //printf("wliza w write_back\n");
     //update lower level of memory upon removing the current value
     // update the cache only on a miss
 
@@ -180,6 +195,7 @@ void store(int address, int access, int ways, int sets, struct block** cache, ch
             for(int j=0; j<sets; j++){
                 if(cache[i][j].tag_index == address_block && cache[i][j].valid==1){
                     //printf("error2\n");
+
                     // obtain the correct block that needs to be changed
                     // if it is a dirty block, push the current value to memory
 
@@ -213,13 +229,12 @@ void store(int address, int access, int ways, int sets, struct block** cache, ch
         if(hit==0){
             printf("store %.4x miss\n", address);
              int page = address_block *block_size;
-            int cur_set = page % sets;
+            int cur_set = address_block % sets;
 
             for(int i=0; i<ways; i++){
                 //update LRE, set valid bit to 1, set
                 if(cache[i][cur_set].LRE == ways-1){
                     cache[i][cur_set].valid = 1;
-                    cache[i][cur_set].tag_index = address_block;
                     cache[i][cur_set].LRE = 0;
 
                     // check for dirty bit and push to memory current contents
@@ -229,8 +244,11 @@ void store(int address, int access, int ways, int sets, struct block** cache, ch
                         cache[i][cur_set].dirty = 0;
                     }
 
-                    for(int j=address; j<address +access; j++ ){
-                        cache[i][cur_set].c_bytes[check + j - address] = info[j-address];
+                    cache[i][cur_set].tag_index = address_block;
+                    
+
+                    for(int j=check; j<check + access; j++ ){
+                        cache[i][cur_set].c_bytes[j] = info[j-check];
                     }
 
                     // update the LRE values of the rest of the numebrs in the set
@@ -238,7 +256,8 @@ void store(int address, int access, int ways, int sets, struct block** cache, ch
                         if(k!=i && cache[k][cur_set].LRE<ways-1)
                             cache[k][cur_set].LRE++;
                     }
-
+                    
+                    //printf("the updated cache val %s \n", cache[i][cur_set].c_bytes);
                     break;
                 }
             }
@@ -249,6 +268,10 @@ void store(int address, int access, int ways, int sets, struct block** cache, ch
 
 
 int main(int argc, char* argv[]) {
+
+    //for(int i=1; i<argc; i++)
+    //    printf("%s\n", argv[i]);
+
 
     char* file_name;
     char* p;
@@ -261,7 +284,8 @@ int main(int argc, char* argv[]) {
 
     size_KB = strtol(argv[2], &p, 10);
     ways = strtol(argv[3], &p, 10);
-    if(argv[4]=="wb"){
+    
+    if(argv[4][1]=='b'){
         write_back = 1;
         write_through = 0;
     }
